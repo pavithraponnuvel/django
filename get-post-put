@@ -1,0 +1,91 @@
+#model
+class Grades(models.Model):
+    regulations = models.ForeignKey(
+        Regulations, max_length=50, blank=True, null=True, on_delete=models.RESTRICT)
+    marks_from = models.IntegerField(blank=True, null=True)
+    marks_to = models.IntegerField(blank=True, null=True)
+    performance = models.CharField(max_length=50, blank=True, null=True)
+    grade = models.CharField(max_length=50, blank=True, null=True)
+    grade_point = models.CharField(max_length=50, blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.RESTRICT, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True)
+ #views
+ class GradesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        grade_details = Grades.objects.values('id', 'grade', 'created_at', 'marks_from', 'marks_to', 'performance', 'grade_point', regulation_id=F(
+            'regulations_id'), regulations_name=F(
+            'regulations__regulation'), user_name=F(
+            'created_by__username')).order_by('grade')
+        if len(grade_details) > 0:
+            return Response({"result": grade_details, 'status': HTTP_200_OK})
+        else:
+            return Response({"result": "No Data Provided !!!.", 'status': HTTP_200_OK})
+
+    def post(self, request):
+        regulations_id = request.data.get('regulations_id', None)
+        grade_name = request.data.get('grade_name', None)
+        marks_from = request.data.get('marks_from', None)
+        marks_to = request.data.get('marks_to', None)
+        performance = request.data.get('performance', None)
+        grade_point = request.data.get('grade_point', None)
+
+        if regulations_id is not None and grade_name is not None and marks_from is not None and marks_to is not None and performance is not None and grade_point is not None:
+            try:
+                Grades.objects.create(grade=grade_name, marks_from=marks_from, marks_to=marks_to, performance=performance, grade_point=grade_point,
+                                      regulations_id=regulations_id, created_by=request.user)
+                return Response({"result": "Added Successfully", "status": HTTP_200_OK})
+            except IntegrityError as ier:
+                return Response({"result": "Already Exists !!!.", "status": HTTP_400_BAD_REQUEST})
+            except Exception as er:
+                return Response({"result": str(er), "status": HTTP_400_BAD_REQUEST})
+        else:
+            return Response({"result": "Fields Required !!!.", "status": HTTP_400_BAD_REQUEST})
+
+    def put(self, request):
+        grade_name = request.data.get('grade_name', None)
+        marks_from = request.data.get('marks_from', None)
+        marks_to = request.data.get('marks_to', None)
+        performance = request.data.get('performance', None)
+        grade_point = request.data.get('grade_point', None)
+        grade_id = request.data.get('grade_id', None)
+        if grade_name is not None and grade_id is not None:
+            try:
+                Grades.objects.filter(id=grade_id).update(
+                    grade=grade_name, marks_from=marks_from, marks_to=marks_to, performance=performance, grade_point=grade_point)
+                return Response({"result": "Updated Successfully", "status": HTTP_200_OK})
+            except IntegrityError as ier:
+                return Response({"result": "Already Exists !!!.", "status": HTTP_400_BAD_REQUEST})
+            except Exception as er:
+                return Response({"result": str(er), "status": HTTP_400_BAD_REQUEST})
+        else:
+            return Response({"result": "Fields Required !!!.", "status": HTTP_400_BAD_REQUEST})
+# views---->excel upload
+
+class GradesView_Upload(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        myfile = request.FILES['file']
+        excel_data = pd.read_excel(myfile)
+        to_dict = excel_data.to_dict('records')
+        if to_dict:
+            for dbframe in to_dict:
+                    try: 
+                        obj, created = Grades.objects.update_or_create(grade=dbframe['grade_name'], defaults={
+                            'marks_from': dbframe['marks_from'],
+                            'marks_to': dbframe['marks_to'],
+                            'performance': dbframe['performance'],
+                            'grade_point': dbframe['grade_point'],
+                            'regulations_id': dbframe['regulations_id']
+                        })
+                    except IntegrityError as ier:
+                        return Response({"result": "Already Exists !!!.", "status": HTTP_400_BAD_REQUEST})
+                    except Exception as er:
+                        print(er)
+                        return Response({"result": str(er),"status": HTTP_400_BAD_REQUEST})
+            # obj.save()
+            return Response({"result": "upload Successfully", "status": HTTP_200_OK})
+        else:
+            return Response({"result": "Fields Required !!!.", "status": HTTP_400_BAD_REQUEST})
