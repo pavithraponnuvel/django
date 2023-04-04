@@ -1,0 +1,122 @@
+#model
+class Student(models.Model):
+    uuid_image = models.UUIDField(default=uuid.uuid4, editable=False)
+    student_name = models.CharField(max_length=150, blank=False, null=False)
+    student_initial = models.CharField(max_length=150, blank=True, null=True)
+    roll_no = models.CharField(
+        max_length=50, blank=True, null=True, unique=True)
+    reg_no = models.CharField(
+        max_length=50, blank=True, null=True, unique=True)
+    current_sem = models.IntegerField(null=True, blank=True)  # 1,2,3,4,5,6,7,8
+    branch = models.ForeignKey(
+        Branch, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_branch')
+    batch = models.ForeignKey(
+        Batch, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_batch')
+    regulations = models.ForeignKey(
+        Regulations, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_regulation')
+    aadhar_no = models.CharField(max_length=50, blank=True, null=True)
+    seat_type = models.CharField(
+        max_length=20, null=True, blank=True)  # reg,lateral
+    quota_type = models.CharField(
+        max_length=20, null=True, blank=True)  # mg,gq
+    father_name = models.CharField(max_length=500, blank=True, null=True)
+    mother_name = models.CharField(max_length=500, blank=True, null=True)
+    student_phone_no = models.CharField(max_length=10, blank=True, null=True)
+    dob = models.CharField(max_length=500, blank=True, null=True)  # dd-mm-yyyy
+    doj = models.CharField(max_length=500, blank=True, null=True)  # dd-mm-yyyy
+    nationality = models.CharField(max_length=500, blank=True, null=True)
+    religion = models.ForeignKey(
+        Religion, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_religion')
+    community = models.ForeignKey(
+        Community, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_community')
+    caste = models.ForeignKey(
+        Caste, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_caste')
+    image_path = models.ImageField(
+        upload_to=nameFile)  # nameFile 'student_image/'
+    gender = models.CharField(max_length=20, null=True, blank=True)  # M,F
+    door_no = models.CharField(max_length=20, null=True, blank=True)
+    street = models.CharField(max_length=20, null=True, blank=True)
+    address = models.CharField(max_length=20, null=True, blank=True)
+    state = models.ForeignKey(
+        State, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_state')
+    district = models.ForeignKey(
+        District, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_district')
+    taluk = models.ForeignKey(
+        Taluk, on_delete=models.RESTRICT, blank=True, null=True, related_name='student_taluk')
+    pincode = models.CharField(max_length=20, null=True, blank=True)
+    boarding_status = models.CharField(
+        max_length=20, null=True, blank=True)  # dayscholar,hostler
+    # Alive,Completed,Discontinued,LongAbsent
+    present_status = models.CharField(max_length=20, null=True, blank=True)
+    # discontinued_status=models.CharField(max_length=20,null=True,blank=True)
+    discontinued_sem = models.IntegerField(null=True, blank=True)
+    # long_absent_status=models.CharField(max_length=20,null=True,blank=True)
+    long_absent_from = models.CharField(max_length=20, null=True, blank=True)
+    course_completed_status = models.CharField(
+        max_length=20, null=True, blank=True)
+    course_completed_year = models.CharField(
+        max_length=20, null=True, blank=True)
+    course_completed_term = models.CharField(
+        max_length=20, null=True, blank=True)  # odd or even
+    result_with_held = models.CharField(max_length=20, null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.RESTRICT, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True)
+#views
+class StudentView_upload(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request):
+        myfile = request.FILES['file']
+        excel_data = pd.read_excel(myfile)
+        to_dict = excel_data.to_dict('records')
+        if to_dict:
+            for dbframe in to_dict:
+                    try: 
+                        obj, created = Student.objects.update_or_create(roll_no=dbframe['roll_no'],
+                                            defaults={'student_name':dbframe['student_name'],
+                                           'student_initial':dbframe['student_initial'],
+                                           'reg_no':dbframe['reg_no'],
+                                           'current_sem':dbframe['current_sem'],
+                                           'branch_id':int(dbframe['branch']),
+                                           'batch_id':int(dbframe['batch']),
+                                           'regulations_id':int(dbframe['regulations']),
+                                           'aadhar_no':dbframe['aadhar_no'],
+                                           'seat_type':dbframe['seat_type'],
+                                           'quota_type':dbframe['quota_type'],
+                                           'father_name':dbframe['father_name'],
+                                           'mother_name':dbframe['mother_name'],
+                                           'student_phone_no':dbframe['student_phone_no'],
+                                           'dob':dbframe['dob'],
+                                           'doj':dbframe['doj'],
+                                           'nationality':dbframe['nationality'],
+                                           'religion_id':int(dbframe['religion']),
+                                           'community_id':int(dbframe['community']),
+                                           'caste_id':int(dbframe['caste']),
+                                        #    image_path=image_path,
+                                           'gender':dbframe['gender'],
+                                           'door_no':dbframe['door_no'],
+                                           'street':dbframe['street'],
+                                           'address':dbframe['address'],
+                                           'state_id':int(dbframe['state']),                                           
+                                           'district_id':int(dbframe['district']),
+                                           'taluk_id':int(dbframe['taluk']),
+                                           'pincode':dbframe['pincode'],
+                                           'boarding_status':dbframe['boarding_status'],
+                                           'present_status':dbframe['present_status'],
+                                           'discontinued_sem':dbframe['discontinued_sem'],
+                                           'long_absent_from':dbframe['long_absent_from'],
+                                           'course_completed_status':dbframe['course_completed_status'],
+                                           'course_completed_year':dbframe['course_completed_year'],
+                                           'course_completed_term':dbframe['course_completed_term'],
+                                           'result_with_held':dbframe['result_with_held'],
+                                           })
+                    except IntegrityError as ier:
+                        return Response({"result": "Already Exists !!!.", "status": HTTP_400_BAD_REQUEST})
+                    except Exception as er:
+                        return Response({"result": str(er), "status": HTTP_400_BAD_REQUEST})
+            # obj.save()
+            return Response({"result": "upload Successfully", "status": HTTP_200_OK})
+        else:
+            return Response({"result": "Fields Required !!!.", "status": HTTP_400_BAD_REQUEST})
+ #urls
+  path('StudentUpload/', StudentView_upload.as_view(), name='StudentUpload'),
