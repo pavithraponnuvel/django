@@ -1,0 +1,8 @@
+sudo apt-get remove npm
+sudo apt-get purge nodejs
+sudo apt-get autoremove
+rm -r /usr/local/bin/npm
+rm  -rf  ~/.npm
+rm -rf  /opt/local/bin/node
+rm  -rf  opt/local/include/node
+rm -rf /opt/local/lib/node_modules
