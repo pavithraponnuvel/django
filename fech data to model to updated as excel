@@ -1,3 +1,4 @@
+
 class Internal_markUpload(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -16,7 +17,7 @@ class Internal_markUpload(APIView):
             subject = []
             for i in subject_details:
                 subject.append(i["code"]+"-"+i["name"])
-            print(subject)
+            # print(subject)
 
             response = HttpResponse(content_type='application/ms-excel')
             response['Content-Disposition'] = 'attachment; filename="users.xls"'
@@ -32,7 +33,7 @@ class Internal_markUpload(APIView):
             font_style.font.bold = True
 
             columns = ['rollNo', 'StudentName'] + subject
-            print(columns)
+            # print(columns)
 
             for col_num in range(len(columns)):
                 # at 0 row 0 column
@@ -41,16 +42,19 @@ class Internal_markUpload(APIView):
             # Sheet body, remaining rows
             font_style = xlwt.XFStyle()
 
-            rows = Student.objects.filter(batch_id=batch_id, branch_id=branch_id).values("roll_no",  studentname=(F(
-                'student_name') , " ",F(
-                'student_initial')))
-            print(rows)
+            rows = Student.objects.filter(batch_id=batch_id, branch_id=branch_id).values_list("roll_no",
+                'student_name','student_initial')
+            # print(rows)
+         
             for row in rows:
+                # print(row[0],row[1]+" "+row[2])
+                row=row[0],row[1]+" "+row[2]
+                print(row)
                 row_num += 1
                 for col_num in range(len(row)):
-
                     ws.write(row_num, col_num, row[col_num], font_style)
-
+                    
             wb.save(response)
 
             return response
+            # return Response({"result": (response), "status": HTTP_200_OK})
