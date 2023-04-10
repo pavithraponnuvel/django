@@ -1,0 +1,56 @@
+class Internal_markUpload(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        batch_id = request.data.get('batch_id', None)
+        branch_id = request.data.get('batch_id', None)
+        subject_id = request.data.get('subject_id', None)
+
+        if batch_id is not None and branch_id is not None and subject_id is not None:
+
+            # student_details=Student.objects.filter(batch_id=batch_id,branch_id=branch_id).values("student_name","roll_no","branch__id","batch__id")
+            # print(student_details)
+            subject_details = Subject.objects.filter(
+                batch_id=batch_id, branch_id=branch_id, id=subject_id).values("name", "code")
+            # print(subject_details)
+            subject = []
+            for i in subject_details:
+                subject.append(i["code"]+"-"+i["name"])
+            print(subject)
+
+            response = HttpResponse(content_type='application/ms-excel')
+            response['Content-Disposition'] = 'attachment; filename="users.xls"'
+
+            wb = xlwt.Workbook(encoding='utf-8')
+            # this will make a sheet named Users Data
+            ws = wb.add_sheet('Users Data')
+
+            # Sheet header, first row
+            row_num = 0
+
+            font_style = xlwt.XFStyle()
+            font_style.font.bold = True
+
+            columns = ['rollNo', 'StudentName'] + subject
+            print(columns)
+
+            for col_num in range(len(columns)):
+                # at 0 row 0 column
+                ws.write(row_num, col_num, columns[col_num], font_style)
+
+            # Sheet body, remaining rows
+            font_style = xlwt.XFStyle()
+
+            rows = Student.objects.filter(batch_id=batch_id, branch_id=branch_id).values("roll_no",  studentname=(F(
+                'student_name') , " ",F(
+                'student_initial')))
+            print(rows)
+            for row in rows:
+                row_num += 1
+                for col_num in range(len(row)):
+
+                    ws.write(row_num, col_num, row[col_num], font_style)
+
+            wb.save(response)
+
+            return response
